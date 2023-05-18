@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os/exec"
@@ -27,4 +28,14 @@ func Run(command *exec.Cmd) (io.Writer, io.Writer, error) {
 	}
 
 	return command.Stdout, command.Stderr, nil
+}
+
+// ConvertJSONStringToMap converts a json string formatted to a map object
+func ConvertJSONStringToMap(data io.Writer) (map[string]any, error) {
+	var result map[string]any
+	err := json.Unmarshal([]byte(fmt.Sprint(data)), &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
