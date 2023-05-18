@@ -13,6 +13,7 @@ require (
 )
 
 require (
+	github.com/Masterminds/semver v1.5.0
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
