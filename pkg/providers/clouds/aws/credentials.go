@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"os"
 )
@@ -59,7 +60,7 @@ func (c *AWSCredentials) ValidateAndFetchCredentials() error {
 
 // CallFuncWithCredentials injects aws credentials into the environment
 // and calls the function provided
-func (c *AWSCredentials) CallFuncWithCredentials(f func() error) error {
+func (c *AWSCredentials) CallFuncWithCredentials(ctx context.Context, f func(ctx context.Context) error) error {
 	priorityLevel, err := c.priority()
 	if err != nil {
 		return err
@@ -76,5 +77,5 @@ func (c *AWSCredentials) CallFuncWithCredentials(f func() error) error {
 		os.Setenv("AWS_SECRET_ACCESS_KEY", c.SecretAccessKey)
 	}
 
-	return f()
+	return f(ctx)
 }

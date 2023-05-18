@@ -44,7 +44,12 @@ func versionCheck(ctx context.Context) error {
 		return err
 	}
 
-	currentVerison, err := semver.NewVersion(strings.ReplaceAll(fmt.Sprint(stdout), "\n", ""))
+	versionSlice := strings.SplitAfter(fmt.Sprint(stdout), "\n")
+	if len(versionSlice) == 0 {
+		return fmt.Errorf("failed to grab rosa version from `rosa version` output")
+	}
+
+	currentVerison, err := semver.NewVersion(strings.ReplaceAll(versionSlice[0], "\n", ""))
 	if err != nil {
 		return fmt.Errorf("failed to parse rosa version %q into semantic version: %v", currentVerison.String(), err)
 	}
@@ -65,7 +70,7 @@ func versionCheck(ctx context.Context) error {
 func validateLogin(ctx context.Context, token, environment string, awsCredentials *awscloud.AWSCredentials) error {
 	commandArgs := []string{"login", "--token", token, "--env", environment}
 
-	err := awsCredentials.CallFuncWithCredentials(func() error {
+	err := awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
 		_, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
 		if err != nil {
 			return fmt.Errorf("login failed %v", err)
