@@ -31,7 +31,7 @@ func (r *Provider) createOIDCConfig(ctx context.Context, prefix, installerRoleAr
 		return "", &oidcConfigError{action: action, err: fmt.Errorf("one or more parameters is empty")}
 	}
 
-	oidcConfig, err := r.oidcConfigLookup(prefix)
+	oidcConfig, err := r.oidcConfigLookup(ctx, prefix)
 	if oidcConfig != nil {
 		return oidcConfig.ID(), nil
 	} else if err != nil {
@@ -81,8 +81,8 @@ func (r *Provider) deleteOIDCConfig(ctx context.Context, oidcConfigID string) er
 }
 
 // getClusterOIDCConfig retrieves the oidc config associated with the cluster
-func (r *Provider) getClusterOIDCConfig(clusterID string) (*clustersmgmtv1.OidcConfig, error) {
-	response, err := r.ClustersMgmt().V1().Clusters().Cluster(clusterID).Get().Send()
+func (r *Provider) getClusterOIDCConfig(ctx context.Context, clusterID string) (*clustersmgmtv1.OidcConfig, error) {
+	response, err := r.ClustersMgmt().V1().Clusters().Cluster(clusterID).Get().SendContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve cluster: %v", err)
 	}
@@ -92,8 +92,8 @@ func (r *Provider) getClusterOIDCConfig(clusterID string) (*clustersmgmtv1.OidcC
 
 // oidcConfigLookup performs a look up to check whether the oidc config already
 // exists for the provided prefix
-func (r *Provider) oidcConfigLookup(prefix string) (*clustersmgmtv1.OidcConfig, error) {
-	response, err := r.ClustersMgmt().V1().OidcConfigs().List().Send()
+func (r *Provider) oidcConfigLookup(ctx context.Context, prefix string) (*clustersmgmtv1.OidcConfig, error) {
+	response, err := r.ClustersMgmt().V1().OidcConfigs().List().SendContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve oidc configs from ocm: %v", err)
 	}

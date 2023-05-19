@@ -114,9 +114,8 @@ func (r *Provider) createHostedControlPlaneVPC(ctx context.Context, clusterName,
 }
 
 // deleteHostedControlPlaneVPC deletes the aws vpc used for provisioning hosted control plane clusters
-func (r *Provider) deleteHostedControlPlaneVPC(clusterName, awsRegion, workingDir string) error {
-	action := "create"
-	ctx := context.Background()
+func (r *Provider) deleteHostedControlPlaneVPC(ctx context.Context, clusterName, awsRegion, workingDir string) error {
+	const action = "create"
 
 	if clusterName == "" || awsRegion == "" || workingDir == "" {
 		return &hcpVPCError{action: action, err: fmt.Errorf("one or more parameters is empty")}

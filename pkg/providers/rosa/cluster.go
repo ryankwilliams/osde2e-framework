@@ -47,10 +47,10 @@ func (c *clusterError) Error() string {
 
 // CreateCluster creates a rosa cluster using the provided inputs
 func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOptions) error {
-	action := "create"
+	const action = "create"
 
 	defer func() {
-		r.Connection.Close()
+		_ = r.Connection.Close()
 	}()
 
 	if options.HostedCP {
@@ -104,17 +104,15 @@ func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOpti
 
 // DeleteCluster deletes a rosa cluster using the provided inputs
 func (r *Provider) DeleteCluster(ctx context.Context, options *DeleteClusterOptions) error {
-	var (
-		action       = "delete"
-		oidcConfigID string
-	)
+	const action = "delete"
+	var oidcConfigID string
 
 	defer func() {
-		r.Connection.Close()
+		_ = r.Connection.Close()
 	}()
 
 	if options.HostedCP {
-		oidcConfig, err := r.getClusterOIDCConfig(options.ClusterID)
+		oidcConfig, err := r.getClusterOIDCConfig(ctx, options.ClusterID)
 		if err != nil {
 			return &clusterError{action: action, err: err}
 		}
@@ -142,6 +140,7 @@ func (r *Provider) DeleteCluster(ctx context.Context, options *DeleteClusterOpti
 
 		// TODO: Handle working directory
 		err = r.deleteHostedControlPlaneVPC(
+			ctx,
 			options.ClusterName,
 			r.awsCredentials.Region,
 			"/tmp",
@@ -229,7 +228,7 @@ func (r *Provider) createCluster(ctx context.Context, options *CreateClusterOpti
 		return "", err
 	}
 
-	cluster, err := r.getCluster(options.ClusterName)
+	cluster, err := r.getCluster(ctx, options.ClusterName)
 	if err != nil {
 		return "", err
 	}
@@ -238,13 +237,13 @@ func (r *Provider) createCluster(ctx context.Context, options *CreateClusterOpti
 }
 
 // getCluster gets the cluster the body
-func (r *Provider) getCluster(clusterName string) (*clustersmgmtv1.Cluster, error) {
+func (r *Provider) getCluster(ctx context.Context, clusterName string) (*clustersmgmtv1.Cluster, error) {
 	query := fmt.Sprintf("product.id = 'rosa' AND name = '%s'", clusterName)
 	response, err := r.ClustersMgmt().V1().Clusters().List().
 		Search(query).
 		Page(1).
 		Size(1).
-		Send()
+		SendContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve cluster: %v", err)
 	}
