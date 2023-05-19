@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-
-	// "log"
 	"os/exec"
 	"time"
 
+	"github.com/Masterminds/semver"
 	"github.com/openshift/osde2e-framework/internal/cmd"
 
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
@@ -19,7 +18,6 @@ type CreateClusterOptions struct {
 	ClusterName        string
 	ComputeMachineType string
 	HostedCP           bool
-	InstallerRoleArn   string
 	MachineCidr        string
 	Mode               string
 	OIDCConfigManaged  bool
@@ -28,6 +26,7 @@ type CreateClusterOptions struct {
 	STS                bool
 	Version            string
 
+	accountRoles accountRoles
 	oidcConfigID string
 	subnetIDs    string
 }
@@ -48,13 +47,42 @@ func (c *clusterError) Error() string {
 	return fmt.Sprintf("%s cluster failed: %v", c.action, c.err)
 }
 
+// setDefaultCreateClusterOptions sets default options when creating clusters
+func (o *CreateClusterOptions) setDefaultCreateClusterOptions() {
+	if o.HostedCP {
+		o.STS = true
+	}
+}
+
+// setDefaultDeleteClusterOptions sets default options when creating clusters
+func (o *DeleteClusterOptions) setDefaultDeleteClusterOptions() {
+	if o.HostedCP {
+		o.STS = true
+	}
+}
+
 // CreateCluster creates a rosa cluster using the provided inputs
 func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOptions) (string, error) {
 	const action = "create"
 	clusterReadyAttempts := 120
 
+	options.setDefaultCreateClusterOptions()
+
+	if options.STS {
+		version, err := semver.NewVersion(options.Version)
+		if err != nil {
+			return "", &clusterError{action: action, err: fmt.Errorf("failed to parse version into semantic version: %v", err)}
+		}
+		majorMinor := fmt.Sprintf("%d.%d", version.Major(), version.Minor())
+
+		accountRoles, err := r.createAccountRoles(ctx, options.ClusterName, majorMinor, options.ChannelGroup)
+		if err != nil {
+			return "", &clusterError{action: action, err: err}
+		}
+		options.accountRoles = *accountRoles
+	}
+
 	if options.HostedCP {
-		options.STS = true
 		clusterReadyAttempts = 30
 
 		// TODO: region check for hcp support
@@ -62,7 +90,7 @@ func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOpti
 		oidcConfigID, err := r.createOIDCConfig(
 			ctx,
 			options.ClusterName,
-			options.InstallerRoleArn,
+			options.accountRoles.installerRoleARN,
 			options.OIDCConfigManaged,
 		)
 		if err != nil {
@@ -113,9 +141,9 @@ func (r *Provider) DeleteCluster(ctx context.Context, options *DeleteClusterOpti
 		oidcConfigID           string
 	)
 
-	if options.HostedCP {
-		options.STS = true
+	options.setDefaultDeleteClusterOptions()
 
+	if options.HostedCP {
 		oidcConfig, err := r.getClusterOIDCConfig(ctx, options.ClusterID)
 		if err != nil {
 			return &clusterError{action: action, err: err}
@@ -163,6 +191,13 @@ func (r *Provider) DeleteCluster(ctx context.Context, options *DeleteClusterOpti
 		}
 	}
 
+	if options.STS {
+		err = r.deleteAccountRoles(ctx, options.ClusterName)
+		if err != nil {
+			return &clusterError{action: action, err: err}
+		}
+	}
+
 	return nil
 }
 
@@ -203,6 +238,22 @@ func validateCreateClusterOptions(options *CreateClusterOptions) (*CreateCluster
 		}
 	}
 
+	if options.accountRoles.controlPlaneRoleARN == "" {
+		return options, fmt.Errorf("iam role arn for control plane is required")
+	}
+
+	if options.accountRoles.installerRoleARN == "" {
+		return options, fmt.Errorf("iam role arn for installer is required")
+	}
+
+	if options.accountRoles.supportRoleARN == "" {
+		return options, fmt.Errorf("iam role arn for support role is required")
+	}
+
+	if options.accountRoles.workerRoleARN == "" {
+		return options, fmt.Errorf("iam role for worker role is required")
+	}
+
 	return options, nil
 }
 
@@ -222,6 +273,10 @@ func (r *Provider) createCluster(ctx context.Context, options *CreateClusterOpti
 	commandArgs = append(commandArgs, "--version", options.Version)
 	commandArgs = append(commandArgs, "--replicas", fmt.Sprint(options.Replicas))
 	commandArgs = append(commandArgs, "--properties", options.Version)
+	commandArgs = append(commandArgs, "--controlplane-iam-role", options.accountRoles.controlPlaneRoleARN)
+	commandArgs = append(commandArgs, "--role-arn", options.accountRoles.installerRoleARN)
+	commandArgs = append(commandArgs, "--support-role-arn", options.accountRoles.supportRoleARN)
+	commandArgs = append(commandArgs, "--worker-iam-role", options.accountRoles.workerRoleARN)
 
 	if options.HostedCP {
 		commandArgs = append(commandArgs, "--hosted-cp")

@@ -39,3 +39,13 @@ func ConvertJSONStringToMap(data io.Writer) (map[string]any, error) {
 	}
 	return result, nil
 }
+
+// ConvertJSONStringToListOfMaps converts a list of json string formatted to a list of map objects
+func ConvertJSONStringToListOfMaps(data io.Writer) ([]map[string]any, error) {
+	var result []map[string]any
+	err := json.Unmarshal([]byte(fmt.Sprint(data)), &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}

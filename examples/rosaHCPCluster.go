@@ -21,16 +21,15 @@ func delete(ctx context.Context, provider *rosa.Provider, options *rosa.DeleteCl
 func main() {
 	// These MUST be set
 	var (
-		action           = "create || delete"
-		awsProfile       = ""
-		awsRegion        = ""
-		channelGroup     = "candidate"
-		clusterName      = ""
-		clusterID        = ""
-		installerRoleARN = ""
-		ocmEnviroment    = ocmclient.Stage
-		ocmToken         = os.Getenv("OCM_TOKEN")
-		version          = "4.12.6"
+		action        = "create || delete"
+		awsProfile    = ""
+		awsRegion     = ""
+		channelGroup  = "candidate"
+		clusterName   = ""
+		clusterID     = ""
+		ocmEnviroment = ocmclient.Stage
+		ocmToken      = os.Getenv("OCM_TOKEN")
+		version       = "4.12.6"
 	)
 
 	ctx := context.Background()
@@ -54,11 +53,10 @@ func main() {
 			ctx,
 			provider,
 			&rosa.CreateClusterOptions{
-				ClusterName:      clusterName,
-				InstallerRoleArn: installerRoleARN,
-				Version:          version,
-				ChannelGroup:     channelGroup,
-				HostedCP:         true,
+				ClusterName:  clusterName,
+				Version:      version,
+				ChannelGroup: channelGroup,
+				HostedCP:     true,
 			},
 		)
 		if err != nil {
