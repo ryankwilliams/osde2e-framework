@@ -336,7 +336,7 @@ func (r *Provider) waitForClusterToBeReady(ctx context.Context, clusterID string
 func (r *Provider) waitForClusterToBeDeleted(ctx context.Context, clusterName string, attempts int) error {
 	for i := 1; i <= attempts; i++ {
 		cluster, err := r.getCluster(ctx, clusterName)
-		if cluster != nil && err != nil {
+		if err == nil && cluster != nil {
 			fmt.Printf("%d/%d : Cluster %q is still uninstalling (state=%s)\n", i, attempts, clusterName, cluster.State())
 			time.Sleep(1 * time.Minute)
 			continue
