@@ -7,19 +7,21 @@ import (
 	ocmsdk "github.com/openshift-online/ocm-sdk-go"
 )
 
+type Environment string
+
 const (
-	Production  = "https://api.openshift.com"
-	Stage       = "https://api.stage.openshift.com"
-	Integration = "https://api.integration.openshift.com"
+	Production  Environment = "https://api.openshift.com"
+	Stage       Environment = "https://api.stage.openshift.com"
+	Integration Environment = "https://api.integration.openshift.com"
 )
 
 type Client struct {
 	*ocmsdk.Connection
 }
 
-func New(ctx context.Context, token, environment string) (*Client, error) {
+func New(ctx context.Context, token string, environment Environment) (*Client, error) {
 	connection, err := ocmsdk.NewConnectionBuilder().
-		URL(environment).
+		URL(string(environment)).
 		Tokens(token).
 		BuildContext(ctx)
 	if err != nil {
