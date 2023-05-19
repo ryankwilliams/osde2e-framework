@@ -106,3 +106,18 @@ func (r *Provider) oidcConfigLookup(ctx context.Context, prefix string) (*cluste
 
 	return nil, nil
 }
+
+// deleteOIDCConfigProvider deletes the oidc config provider associated to the cluster
+func (r *Provider) deleteOIDCConfigProvider(ctx context.Context, clusterID string) error {
+	commandArgs := []string{"delete", "oidc-provider", "--cluster", clusterID, "--mode", "auto", "--yes"}
+
+	err := r.awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
+		_, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
+		return err
+	})
+	if err != nil {
+		return &oidcConfigError{action: "delete", err: err}
+	}
+
+	return nil
+}

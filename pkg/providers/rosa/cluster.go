@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+
+	// "log"
 	"os/exec"
+	"time"
 
 	"github.com/openshift/osde2e-framework/internal/cmd"
 
@@ -48,12 +51,16 @@ func (c *clusterError) Error() string {
 // CreateCluster creates a rosa cluster using the provided inputs
 func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOptions) error {
 	const action = "create"
+	clusterReadyAttempts := 120
 
 	defer func() {
 		_ = r.Connection.Close()
 	}()
 
 	if options.HostedCP {
+		options.STS = true
+		clusterReadyAttempts = 30
+
 		// TODO: region check for hcp support
 
 		oidcConfigID, err := r.createOIDCConfig(
@@ -89,7 +96,7 @@ func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOpti
 
 	log.Printf("Cluster ID: %s\n", clusterID)
 
-	err = r.waitForClusterToBeReady()
+	err = r.waitForClusterToBeReady(ctx, clusterID, clusterReadyAttempts)
 	if err != nil {
 		return &clusterError{action: action, err: err}
 	}
@@ -105,13 +112,18 @@ func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOpti
 // DeleteCluster deletes a rosa cluster using the provided inputs
 func (r *Provider) DeleteCluster(ctx context.Context, options *DeleteClusterOptions) error {
 	const action = "delete"
-	var oidcConfigID string
+	var (
+		clusterDeletedAttempts = 30
+		oidcConfigID           string
+	)
 
 	defer func() {
 		_ = r.Connection.Close()
 	}()
 
 	if options.HostedCP {
+		options.STS = true
+
 		oidcConfig, err := r.getClusterOIDCConfig(ctx, options.ClusterID)
 		if err != nil {
 			return &clusterError{action: action, err: err}
@@ -124,12 +136,21 @@ func (r *Provider) DeleteCluster(ctx context.Context, options *DeleteClusterOpti
 		return &clusterError{action: action, err: err}
 	}
 
-	// TODO: Wait for cluster to be deleted, have the code, just need to add it
+	err = r.waitForClusterToBeDeleted(ctx, options.ClusterName, clusterDeletedAttempts)
+	if err != nil {
+		return &clusterError{action: action, err: err}
+	}
 
 	if options.STS {
-		// TODO: Delete operator roles, have the code, just need to add it
+		err = r.deleteOperatorRoles(ctx, options.ClusterID)
+		if err != nil {
+			return &clusterError{action: action, err: err}
+		}
 
-		// TODO: Delete oidc config provider, have the code, just need to add it
+		err = r.deleteOIDCConfigProvider(ctx, options.ClusterID)
+		if err != nil {
+			return &clusterError{action: action, err: err}
+		}
 	}
 
 	if options.HostedCP {
@@ -244,9 +265,6 @@ func (r *Provider) getCluster(ctx context.Context, clusterName string) (*cluster
 		Page(1).
 		Size(1).
 		SendContext(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve cluster: %v", err)
-	}
 
 	switch response.Total() {
 	case 1:
@@ -272,9 +290,63 @@ func (r *Provider) deleteCluster(ctx context.Context, clusterID string) error {
 }
 
 // waitForClusterToBeReady waits for the cluster to be in a ready state
-func (r *Provider) waitForClusterToBeReady() error {
-	// TODO: Finish, have the code, just need to add it
-	return nil
+func (r *Provider) waitForClusterToBeReady(ctx context.Context, clusterID string, attempts int) error {
+	getClusterState := func() (string, error) {
+		var clusterState string
+
+		commandArgs := []string{"describe", "cluster", "--cluster", clusterID, "--output", "json"}
+		err := r.awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
+			stdout, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
+			if err != nil {
+				return err
+			}
+
+			output, err := cmd.ConvertJSONStringToMap(stdout)
+			if err != nil {
+				return fmt.Errorf("failed to convert output to map: %v", err)
+			}
+
+			clusterState = fmt.Sprint(output["status"].(map[string]any)["state"])
+
+			return nil
+		})
+		return clusterState, err
+	}
+
+	for i := 1; i <= attempts; i++ {
+		clusterState, err := getClusterState()
+		if err != nil {
+			clusterState = "n/a"
+		}
+
+		if clusterState != "ready" {
+			fmt.Printf("%d/%d : Cluster %q not in ready state (state=%s)\n", i, attempts, clusterID, clusterState)
+			time.Sleep(1 * time.Minute)
+			continue
+		}
+
+		fmt.Printf("Cluster id: %q is ready!", clusterID)
+		return nil
+	}
+
+	return fmt.Errorf("cluster %q failed to enter ready state in the alloted attempts", clusterID)
+}
+
+// waitForClusterToBeDeleted waits for the cluster to be deleted
+func (r *Provider) waitForClusterToBeDeleted(ctx context.Context, clusterName string, attempts int) error {
+	for i := 1; i <= attempts; i++ {
+		cluster, err := r.getCluster(ctx, clusterName)
+		if cluster != nil && err != nil {
+			fmt.Printf("%d/%d : Cluster %q is still uninstalling (state=%s)\n", i, attempts, clusterName, cluster.State())
+			time.Sleep(1 * time.Minute)
+			continue
+		}
+
+		fmt.Printf("Cluster %q no longer exists!", clusterName)
+		return nil
+	}
+
+	return fmt.Errorf("cluster %q failed to finish uninstalling in the alloted attempts", clusterName)
 }
 
 // waitForClusterHealthChecksToSucceed waits for the cluster health check job to succeed
