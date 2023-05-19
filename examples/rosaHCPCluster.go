@@ -19,20 +19,27 @@ func delete(ctx context.Context, provider *rosa.Provider, options *rosa.DeleteCl
 }
 
 func main() {
-	const action = "delete"
-
+	// These MUST be set
 	var (
-		clusterName = "<cluster-name>"
-		clusterID   = "<cluster-id>"
+		action           = "create || delete"
+		awsProfile       = ""
+		awsRegion        = ""
+		channelGroup     = "candidate"
+		clusterName      = ""
+		clusterID        = ""
+		installerRoleARN = ""
+		ocmEnviroment    = ocmclient.Stage
+		ocmToken         = os.Getenv("OCM_TOKEN")
+		version          = "4.12.6"
 	)
 
 	ctx := context.Background()
 
 	provider, err := rosa.New(
 		ctx,
-		os.Getenv("OCM_TOKEN"),
-		ocmclient.Stage,
-		&awscloud.AWSCredentials{Profile: "<profile>", Region: "<region>"},
+		ocmToken,
+		ocmEnviroment,
+		&awscloud.AWSCredentials{Profile: awsProfile, Region: awsRegion},
 	)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create rosa provider: %v", err))
@@ -44,9 +51,9 @@ func main() {
 			provider,
 			&rosa.CreateClusterOptions{
 				ClusterName:      clusterName,
-				InstallerRoleArn: "<installer-role-arn>",
-				Version:          "4.12.6",
-				ChannelGroup:     "candidate",
+				InstallerRoleArn: installerRoleARN,
+				Version:          version,
+				ChannelGroup:     channelGroup,
 				HostedCP:         true,
 			},
 		)
