@@ -45,6 +45,10 @@ func main() {
 		panic(fmt.Sprintf("Failed to create rosa provider: %v", err))
 	}
 
+	defer func() {
+		_ = provider.Connection.Close()
+	}()
+
 	if action == "create" {
 		_, err := create(
 			ctx,

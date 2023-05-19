@@ -53,10 +53,6 @@ func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOpti
 	const action = "create"
 	clusterReadyAttempts := 120
 
-	defer func() {
-		_ = r.Connection.Close()
-	}()
-
 	if options.HostedCP {
 		options.STS = true
 		clusterReadyAttempts = 30
@@ -116,10 +112,6 @@ func (r *Provider) DeleteCluster(ctx context.Context, options *DeleteClusterOpti
 		clusterDeletedAttempts = 30
 		oidcConfigID           string
 	)
-
-	defer func() {
-		_ = r.Connection.Close()
-	}()
 
 	if options.HostedCP {
 		options.STS = true
