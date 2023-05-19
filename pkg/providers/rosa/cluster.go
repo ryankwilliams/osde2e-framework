@@ -49,7 +49,7 @@ func (c *clusterError) Error() string {
 }
 
 // CreateCluster creates a rosa cluster using the provided inputs
-func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOptions) error {
+func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOptions) (string, error) {
 	const action = "create"
 	clusterReadyAttempts := 120
 
@@ -70,7 +70,7 @@ func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOpti
 			options.OIDCConfigManaged,
 		)
 		if err != nil {
-			return &clusterError{action: action, err: err}
+			return "", &clusterError{action: action, err: err}
 		}
 
 		options.oidcConfigID = oidcConfigID
@@ -83,7 +83,7 @@ func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOpti
 			"/tmp",
 		)
 		if err != nil {
-			return &clusterError{action: action, err: err}
+			return "", &clusterError{action: action, err: err}
 		}
 
 		options.subnetIDs = fmt.Sprintf("%s,%s", vpc.privateSubnet, vpc.publicSubnet)
@@ -91,22 +91,22 @@ func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOpti
 
 	clusterID, err := r.createCluster(ctx, options)
 	if err != nil {
-		return &clusterError{action: action, err: err}
+		return "", &clusterError{action: action, err: err}
 	}
 
 	log.Printf("Cluster ID: %s\n", clusterID)
 
 	err = r.waitForClusterToBeReady(ctx, clusterID, clusterReadyAttempts)
 	if err != nil {
-		return &clusterError{action: action, err: err}
+		return clusterID, &clusterError{action: action, err: err}
 	}
 
 	err = r.waitForClusterHealthChecksToSucceed()
 	if err != nil {
-		return &clusterError{action: action, err: err}
+		return clusterID, &clusterError{action: action, err: err}
 	}
 
-	return nil
+	return clusterID, nil
 }
 
 // DeleteCluster deletes a rosa cluster using the provided inputs
