@@ -13,6 +13,7 @@ import (
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 )
 
+// CreateClusterOptions represents data used to create clusters
 type CreateClusterOptions struct {
 	ChannelGroup       string
 	ClusterName        string
@@ -31,6 +32,7 @@ type CreateClusterOptions struct {
 	subnetIDs    string
 }
 
+// DeleteClusterOptions represents data used to delete clusters
 type DeleteClusterOptions struct {
 	ClusterID   string
 	ClusterName string
@@ -38,27 +40,15 @@ type DeleteClusterOptions struct {
 	STS         bool
 }
 
+// clusterError represents the custom error
 type clusterError struct {
 	action string
 	err    error
 }
 
+// Error returns the formatted error message when clusterError is invoked
 func (c *clusterError) Error() string {
 	return fmt.Sprintf("%s cluster failed: %v", c.action, c.err)
-}
-
-// setDefaultCreateClusterOptions sets default options when creating clusters
-func (o *CreateClusterOptions) setDefaultCreateClusterOptions() {
-	if o.HostedCP {
-		o.STS = true
-	}
-}
-
-// setDefaultDeleteClusterOptions sets default options when creating clusters
-func (o *DeleteClusterOptions) setDefaultDeleteClusterOptions() {
-	if o.HostedCP {
-		o.STS = true
-	}
 }
 
 // CreateCluster creates a rosa cluster using the provided inputs
@@ -201,8 +191,7 @@ func (r *Provider) DeleteCluster(ctx context.Context, options *DeleteClusterOpti
 	return nil
 }
 
-// validateCreateClusterOptions verifies required create cluster options are set
-// and sets defaults for ones undefined
+// validateCreateClusterOptions verifies required options are set and sets defaults if undefined
 func validateCreateClusterOptions(options *CreateClusterOptions) (*CreateClusterOptions, error) {
 	if options.ClusterName == "" {
 		return options, fmt.Errorf("cluster name is required")
@@ -400,4 +389,18 @@ func (r *Provider) waitForClusterToBeDeleted(ctx context.Context, clusterName st
 func (r *Provider) waitForClusterHealthChecksToSucceed() error {
 	// TODO: Implement this
 	return nil
+}
+
+// setDefaultCreateClusterOptions sets default options when creating clusters
+func (o *CreateClusterOptions) setDefaultCreateClusterOptions() {
+	if o.HostedCP {
+		o.STS = true
+	}
+}
+
+// setDefaultDeleteClusterOptions sets default options when creating clusters
+func (o *DeleteClusterOptions) setDefaultDeleteClusterOptions() {
+	if o.HostedCP {
+		o.STS = true
+	}
 }

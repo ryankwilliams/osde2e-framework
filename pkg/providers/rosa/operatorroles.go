@@ -8,11 +8,13 @@ import (
 	"github.com/openshift/osde2e-framework/internal/cmd"
 )
 
+// operatorRoleError represents the custom error
 type operatorRoleError struct {
 	action string
 	err    error
 }
 
+// Error returns the formatted error message when operatorRoleError is invoked
 func (o *operatorRoleError) Error() string {
 	return fmt.Sprintf("%s operator role failed: %v", o.action, o.err)
 }

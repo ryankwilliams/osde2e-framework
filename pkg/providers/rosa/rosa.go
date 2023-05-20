@@ -14,18 +14,18 @@ import (
 
 const minimumVersion = "1.2.21"
 
-// RosaProvider contains the data to perform rosa operations
+// Provider is a rosa provider
 type Provider struct {
 	*ocmclient.Client
 	awsCredentials *awscloud.AWSCredentials
 }
 
-// providerError contains the data to build a custom error for rosa provider
+// providerError represents the provider custom error
 type providerError struct {
 	err error
 }
 
-// Error creates the custom error for rosa provider
+// Error returns the formatted error message when providerError is invoked
 func (r *providerError) Error() string {
 	return fmt.Sprintf("failed to construct rosa provider: %v", r.err)
 }
@@ -36,8 +36,7 @@ func cliExist() error {
 	return err
 }
 
-// versionCheck validates whether the rosa cli available in path meets the
-// minimal version required
+// versionCheck verifies the rosa cli version meets the minimal version required
 func versionCheck(ctx context.Context) error {
 	stdout, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", "version"))
 	if err != nil {
@@ -46,50 +45,45 @@ func versionCheck(ctx context.Context) error {
 
 	versionSlice := strings.SplitAfter(fmt.Sprint(stdout), "\n")
 	if len(versionSlice) == 0 {
-		return fmt.Errorf("failed to grab rosa version from `rosa version` output")
+		return fmt.Errorf("versionCheck failed to get version from cli standard out")
 	}
 
-	currentVerison, err := semver.NewVersion(strings.ReplaceAll(versionSlice[0], "\n", ""))
+	currentVersion, err := semver.NewVersion(strings.ReplaceAll(versionSlice[0], "\n", ""))
 	if err != nil {
-		return fmt.Errorf("failed to parse rosa version %q into semantic version: %v", currentVerison.String(), err)
+		return fmt.Errorf("versionCheck failed to parse version to semantic version: %v", err)
 	}
 
 	minVersion, err := semver.NewVersion(minimumVersion)
 	if err != nil {
-		return fmt.Errorf("failed to parse minimum rosa version %q into semantic version: %v", minimumVersion, err)
+		return fmt.Errorf("versionCheck failed to parse minimum version to semantic version: %v", err)
 	}
 
-	if minVersion.Compare(currentVerison) == 1 {
-		return fmt.Errorf("current rosa version is %q and must be >= %q", currentVerison.String(), minVersion)
+	if minVersion.Compare(currentVersion) == 1 {
+		return fmt.Errorf("current rosa version is %q and must be >= %q", currentVersion.String(), minVersion)
 	}
 
 	return nil
 }
 
-// validateLogin validates the token/aws credentials provided are valid
-func validateLogin(ctx context.Context, token, environment string, awsCredentials *awscloud.AWSCredentials) error {
+// verifyCredentials validates the ocm token and aws credentials to ensure they are valid
+func verifyCredentials(ctx context.Context, token, environment string, awsCredentials *awscloud.AWSCredentials) error {
 	commandArgs := []string{"login", "--token", token, "--env", environment}
 
-	err := awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
+	return awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
 		_, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
 		if err != nil {
 			return fmt.Errorf("login failed %v", err)
 		}
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
-// New constructs a rosa provider and returns any errors encountered
-// It is the callers responsibility to close the ocm connection when they are finished
-// This can be done by closing the connection using defer `defer rosaProvider.Client.Close()`
+// New handles constructing the rosa provider which creates a connection
+// to openshift cluster manager "ocm". It is the callers responsibility
+// to close the ocm connection when they are finished (defer provider.Connection.Close())
 func New(ctx context.Context, token string, environment ocmclient.Environment, args ...any) (*Provider, error) {
 	if environment == "" || token == "" {
-		return nil, &providerError{err: fmt.Errorf("one or more parameters are empty when invoking `New()`")}
+		return nil, &providerError{err: fmt.Errorf("some parameters are undefined, unable to construct osd provider")}
 	}
 
 	// TODO: Implement downloading rosa cli when not found in path
@@ -115,7 +109,7 @@ func New(ctx context.Context, token string, environment ocmclient.Environment, a
 		return nil, &providerError{err: fmt.Errorf("aws authentication data check failed: %v", err)}
 	}
 
-	err = validateLogin(ctx, token, string(environment), awsCredentials)
+	err = verifyCredentials(ctx, token, string(environment), awsCredentials)
 	if err != nil {
 		return nil, &providerError{err: err}
 	}

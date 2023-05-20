@@ -14,23 +14,26 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
+// vpc represents the details of an aws vpc
 type vpc struct {
 	privateSubnet     string
 	publicSubnet      string
 	nodePrivateSubnet string
 }
 
+// hpcVPCError represents the custom error
 type hcpVPCError struct {
 	action string
 	err    error
 }
 
+// Error returns the formatted error message when hpcVPCError is invoked
 func (h *hcpVPCError) Error() string {
 	return fmt.Sprintf("%s hcp cluster vpc failed: %v", h.action, h.err)
 }
 
 // copyFile copies the srcFile provided to the destFile
-func copyFile(srcFile string, destFile string) error {
+func copyFile(srcFile, destFile string) error {
 	srcReader, err := assets.FS.Open(srcFile)
 	if err != nil {
 		return fmt.Errorf("error opening %s file: %w", srcFile, err)

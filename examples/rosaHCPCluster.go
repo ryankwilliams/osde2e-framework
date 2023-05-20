@@ -10,14 +10,6 @@ import (
 	"github.com/openshift/osde2e-framework/pkg/providers/rosa"
 )
 
-func create(ctx context.Context, provider *rosa.Provider, options *rosa.CreateClusterOptions) (string, error) {
-	return provider.CreateCluster(ctx, options)
-}
-
-func delete(ctx context.Context, provider *rosa.Provider, options *rosa.DeleteClusterOptions) error {
-	return provider.DeleteCluster(ctx, options)
-}
-
 func main() {
 	// These MUST be set
 	var (
@@ -49,9 +41,8 @@ func main() {
 	}()
 
 	if action == "create" {
-		_, err := create(
+		_, err := provider.CreateCluster(
 			ctx,
-			provider,
 			&rosa.CreateClusterOptions{
 				ClusterName:  clusterName,
 				Version:      version,
@@ -63,9 +54,8 @@ func main() {
 			panic(fmt.Sprintf("Failed to create rosa hcp cluster: %v", err))
 		}
 	} else if action == "delete" {
-		err := delete(
+		err := provider.DeleteCluster(
 			ctx,
-			provider,
 			&rosa.DeleteClusterOptions{
 				ClusterName: clusterName,
 				ClusterID:   clusterID,

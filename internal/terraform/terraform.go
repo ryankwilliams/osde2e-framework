@@ -41,7 +41,7 @@ func New(workingDir string) (*runner, error) {
 	}, err
 }
 
-// Uninstalls the terraform instance installed at runtime.
+// Uninstalls the terraform instance installed at runtime
 func (r *runner) Uninstall(ctx context.Context) error {
 	err := r.installer.Remove(ctx)
 	if err != nil {
@@ -51,7 +51,7 @@ func (r *runner) Uninstall(ctx context.Context) error {
 	return nil
 }
 
-// Init performs a terraform init using the provided TerraformRunner receiver.
+// Init performs a terraform init using the provided TerraformRunner receiver
 func (r *runner) Init(ctx context.Context) error {
 	err := r.runner.Init(ctx)
 	if err != nil {
@@ -76,7 +76,7 @@ func (r *runner) Plan(ctx context.Context, args ...tfexec.PlanOption) error {
 	return nil
 }
 
-// Apply performs a terraform apply using the provided TerraformRunner receiver.
+// Apply performs a terraform apply using the provided TerraformRunner receiver
 func (r *runner) Apply(ctx context.Context) error {
 	err := r.runner.Apply(
 		ctx,
@@ -89,7 +89,7 @@ func (r *runner) Apply(ctx context.Context) error {
 	return nil
 }
 
-// Destroy performs a terraform destroy using the provided TerraformRunner receiver.
+// Destroy performs a terraform destroy using the provided TerraformRunner receiver
 func (r *runner) Destroy(ctx context.Context, args ...tfexec.DestroyOption) error {
 	err := r.runner.Destroy(
 		ctx,
@@ -102,7 +102,7 @@ func (r *runner) Destroy(ctx context.Context, args ...tfexec.DestroyOption) erro
 	return nil
 }
 
-// Output performs a terraform output using the provided TerraformRunner receiver.
+// Output performs a terraform output using the provided TerraformRunner receiver
 func (r *runner) Output(ctx context.Context) (map[string]tfexec.OutputMeta, error) {
 	output, err := r.runner.Output(ctx)
 	if err != nil {

@@ -7,27 +7,27 @@ import (
 	ocmclient "github.com/openshift/osde2e-framework/pkg/clients/ocm"
 )
 
-// Provider contains the data required to work with ocm api
+// Provider is a openshift dedicated "osd" provider
 type Provider struct {
 	*ocmclient.Client
 }
 
-// providerError contains the data to build a custom error for ocm provider
+// providerError represents the provider custom error
 type providerError struct {
 	err error
 }
 
-// Error creates the custom error for osd provider
+// Error returns the formatted error message when providerError is invoked
 func (o *providerError) Error() string {
 	return fmt.Sprintf("failed to construct osd provider: %v", o.err)
 }
 
-// New constructs a osd provider and returns any errors encountered
-// It is the callers responsibility to close the ocm connection when they are finished
-// This can be done by closing the connection using defer `defer osdProvider.Client.Close()`
+// New handles constructing the osd provider which creates a connection
+// to openshift cluster manager "ocm". It is the callers responsibility
+// to close the ocm connection when they are finished (defer provider.Connection.Close())
 func New(ctx context.Context, token string, environment ocmclient.Environment) (*Provider, error) {
 	if environment == "" || token == "" {
-		return nil, &providerError{err: fmt.Errorf("one or more parameters are empty when invoking `New()`")}
+		return nil, &providerError{err: fmt.Errorf("some parameters are undefined, unable to construct osd provider")}
 	}
 
 	ocmClient, err := ocmclient.New(ctx, token, environment)
@@ -35,7 +35,5 @@ func New(ctx context.Context, token string, environment ocmclient.Environment) (
 		return nil, &providerError{err: err}
 	}
 
-	return &Provider{
-		ocmClient,
-	}, nil
+	return &Provider{ocmClient}, nil
 }

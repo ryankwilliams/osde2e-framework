@@ -12,11 +12,13 @@ import (
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 )
 
+// oidcConfigError represents the custom error
 type oidcConfigError struct {
 	action string
 	err    error
 }
 
+// Error returns the formatted error message when oidcConfigError is invoked
 func (o *oidcConfigError) Error() string {
 	return fmt.Sprintf("%s oidc config failed: %v", o.action, o.err)
 }
@@ -24,11 +26,10 @@ func (o *oidcConfigError) Error() string {
 // createOIDCConfig creates an oidc config if one does not already exist
 func (r *Provider) createOIDCConfig(ctx context.Context, prefix, installerRoleArn string, managed bool) (string, error) {
 	const action = "create"
-
 	var oidcConfigID string
 
 	if prefix == "" || installerRoleArn == "" {
-		return "", &oidcConfigError{action: action, err: fmt.Errorf("one or more parameters is empty")}
+		return "", &oidcConfigError{action: action, err: fmt.Errorf("some parameters are undefined")}
 	}
 
 	oidcConfig, err := r.oidcConfigLookup(ctx, prefix)
@@ -90,8 +91,7 @@ func (r *Provider) getClusterOIDCConfig(ctx context.Context, clusterID string) (
 	return response.Body().AWS().STS().OidcConfig(), nil
 }
 
-// oidcConfigLookup performs a look up to check whether the oidc config already
-// exists for the provided prefix
+// oidcConfigLookup checks if an oidc config already exists using the provided prefix
 func (r *Provider) oidcConfigLookup(ctx context.Context, prefix string) (*clustersmgmtv1.OidcConfig, error) {
 	response, err := r.ClustersMgmt().V1().OidcConfigs().List().SendContext(ctx)
 	if err != nil {

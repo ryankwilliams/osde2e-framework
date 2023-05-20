@@ -12,10 +12,9 @@ import (
 func Run(command *exec.Cmd) (io.Writer, io.Writer, error) {
 	var stdout, stderr bytes.Buffer
 
+	// TODO: Configure tee output to file/buffer
 	command.Stdout = &stdout
 	command.Stderr = &stderr
-
-	// TODO: Configure tee output to file/buffer
 
 	err := command.Start()
 	if err != nil {

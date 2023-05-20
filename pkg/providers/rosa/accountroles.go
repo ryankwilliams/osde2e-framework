@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/osde2e-framework/internal/cmd"
 )
 
+// accountRoles represents all roles for a given prefix/version
 type accountRoles struct {
 	controlPlaneRoleARN string
 	installerRoleARN    string
@@ -17,11 +18,13 @@ type accountRoles struct {
 	workerRoleARN       string
 }
 
+// accountRolesError represents the custom error
 type accountRolesError struct {
 	action string
 	err    error
 }
 
+// Error returns the formatted error message when accountRolesError is invoked
 func (a *accountRolesError) Error() string {
 	return fmt.Sprintf("%s account roles failed: %v", a.action, a.err)
 }
