@@ -318,6 +318,7 @@ func (o *Provider) OCMUpgrade(ctx context.Context, client *kubernetes.Client, cl
 			time.Sleep(upgradeDelay * time.Second)
 		case "Upgrading":
 			log.Printf("Upgrade is in progress, %s\n", conditionMessage)
+			time.Sleep(upgradeDelay * time.Second)
 		}
 	}
 
