@@ -12,7 +12,7 @@ import (
 	awscloud "github.com/openshift/osde2e-framework/pkg/providers/clouds/aws"
 )
 
-const minimumVersion = "1.2.21"
+const minimumVersion = "1.2.22"
 
 // Provider is a rosa provider
 type Provider struct {
