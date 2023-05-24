@@ -261,7 +261,7 @@ func (r *Provider) createCluster(ctx context.Context, options *CreateClusterOpti
 	commandArgs = append(commandArgs, "--region", r.awsCredentials.Region)
 	commandArgs = append(commandArgs, "--version", options.Version)
 	commandArgs = append(commandArgs, "--replicas", fmt.Sprint(options.Replicas))
-	commandArgs = append(commandArgs, "--properties", options.Version)
+	commandArgs = append(commandArgs, "--properties", options.Properties)
 	commandArgs = append(commandArgs, "--controlplane-iam-role", options.accountRoles.controlPlaneRoleARN)
 	commandArgs = append(commandArgs, "--role-arn", options.accountRoles.installerRoleARN)
 	commandArgs = append(commandArgs, "--support-role-arn", options.accountRoles.supportRoleARN)
