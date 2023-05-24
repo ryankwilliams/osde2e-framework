@@ -234,10 +234,6 @@ func (o *Provider) OCMUpgrade(ctx context.Context, client *kubernetes.Client, cl
 		return &upgradeError{err: err}
 	}
 
-	if err = o.restartManagedUpgradeOperator(ctx, client); err != nil {
-		return &upgradeError{err: err}
-	}
-
 	if err = o.addGateAgreement(ctx, clusterID, currentVersion, upgradeVersion); err != nil {
 		return &upgradeError{err: err}
 	}
