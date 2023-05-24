@@ -356,12 +356,12 @@ func (r *Provider) waitForClusterToBeReady(ctx context.Context, clusterID string
 		}
 
 		if clusterState != "ready" {
-			fmt.Printf("%d/%d : Cluster %q not in ready state (state=%s)\n", i, attempts, clusterID, clusterState)
+			log.Printf("%d/%d : Cluster %q not in ready state (state=%s)\n", i, attempts, clusterID, clusterState)
 			time.Sleep(1 * time.Minute)
 			continue
 		}
 
-		fmt.Printf("Cluster id: %q is ready!", clusterID)
+		log.Printf("Cluster id: %q is ready!", clusterID)
 		return nil
 	}
 
@@ -373,12 +373,12 @@ func (r *Provider) waitForClusterToBeDeleted(ctx context.Context, clusterName st
 	for i := 1; i <= attempts; i++ {
 		cluster, err := r.getCluster(ctx, clusterName)
 		if err == nil && cluster != nil {
-			fmt.Printf("%d/%d : Cluster %q is still uninstalling (state=%s)\n", i, attempts, clusterName, cluster.State())
+			log.Printf("%d/%d : Cluster %q is still uninstalling (state=%s)\n", i, attempts, clusterName, cluster.State())
 			time.Sleep(1 * time.Minute)
 			continue
 		}
 
-		fmt.Printf("Cluster %q no longer exists!", clusterName)
+		log.Printf("Cluster %q no longer exists!", clusterName)
 		return nil
 	}
 
