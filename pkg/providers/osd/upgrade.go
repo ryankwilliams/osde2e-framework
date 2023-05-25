@@ -343,7 +343,7 @@ func getManagedUpgradeOperatorConfig(ctx context.Context, dynamicClient *dynamic
 			Resource: "upgradeconfigs",
 		},
 	).Namespace(managedUpgradeOperatorNamespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
+	if err != nil || len(upgradeConfigs.Items) < 1 {
 		return nil, err
 	}
 
