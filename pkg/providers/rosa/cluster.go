@@ -4,13 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"time"
 
 	"github.com/Masterminds/semver"
 	"github.com/openshift/osde2e-framework/internal/cmd"
+	"github.com/openshift/osde2e-framework/pkg/clients/kubernetes"
 
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // CreateClusterOptions represents data used to create clusters
@@ -115,7 +119,12 @@ func (r *Provider) CreateCluster(ctx context.Context, options *CreateClusterOpti
 		return clusterID, &clusterError{action: action, err: err}
 	}
 
-	err = r.waitForClusterHealthChecksToSucceed()
+	kubeConfigFile, err := r.Client.KubeConfigFile(ctx, clusterID)
+	if err != nil {
+		return clusterID, &clusterError{action: action, err: err}
+	}
+
+	err = r.waitForClusterHealthChecksToSucceed(ctx, kubeConfigFile, options.HostedCP)
 	if err != nil {
 		return clusterID, &clusterError{action: action, err: err}
 	}
@@ -386,8 +395,67 @@ func (r *Provider) waitForClusterToBeDeleted(ctx context.Context, clusterName st
 }
 
 // waitForClusterHealthChecksToSucceed waits for the cluster health check job to succeed
-func (r *Provider) waitForClusterHealthChecksToSucceed() error {
-	// TODO: Implement this
+func (r *Provider) waitForClusterHealthChecksToSucceed(ctx context.Context, kubeConfigFile string, hostedCP bool) error {
+	defer func() {
+		_ = os.Unsetenv("KUBECONFIG")
+	}()
+
+	os.Setenv("KUBECONFIG", kubeConfigFile)
+	client, err := kubernetes.New()
+	if err != nil {
+		return fmt.Errorf("failed to construct kubernetes client: %v", err)
+	}
+
+	switch hostedCP {
+	case true:
+		return r.hcpClusterInstallHealthChecks(ctx, client)
+	case false:
+		return r.classicClusterInstallHealthChecks(ctx, client)
+	default:
+		return nil
+	}
+}
+
+// classicClusterInstallHealthChecks waits for the classic cluster to be healthy and operational
+func (r *Provider) classicClusterInstallHealthChecks(ctx context.Context, client *kubernetes.Client) error {
+	// TODO Implement this and port existing check of waiting for osd ready job
+	log.Println("Start: ROSA Classic Cluster health checks..")
+	log.Println("End: ROSA Classic Cluster health checks..")
+	return nil
+}
+
+// hcpClusterInstallHealthChecks waits for the hosted control plane cluster to be healthy and operational
+func (r *Provider) hcpClusterInstallHealthChecks(ctx context.Context, client *kubernetes.Client) error {
+	log.Println("Start: ROSA Hosted Control Plane (HCP) Cluster health checks..")
+
+	// TODO We should look into seeing how to modify osd ready job to support hcp clusters
+	err := wait.PollUntilContextTimeout(ctx, 30*time.Second, 10*time.Minute, true, func(ctx context.Context) (bool, error) {
+		var nodes v1.NodeList
+		err := client.List(ctx, &nodes)
+		if err != nil {
+			if os.IsTimeout(err) {
+				log.Println(err)
+				return false, nil
+			}
+			return false, err
+		}
+
+		for _, node := range nodes.Items {
+			for _, condition := range node.Status.Conditions {
+				if condition.Type == v1.NodeReady && condition.Status != v1.ConditionTrue {
+					return false, nil
+				}
+			}
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("hosted control plane cluster health check failed: %v", err)
+	}
+
+	log.Println("End: ROSA Hosted Control Plane (HCP) Cluster health checks")
+
 	return nil
 }
 
