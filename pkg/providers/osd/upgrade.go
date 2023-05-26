@@ -290,6 +290,9 @@ func (o *Provider) OCMUpgrade(ctx context.Context, client *kubernetes.Client, cl
 				}
 
 				conditions, found, err := unstructured.NestedSlice(h.(map[string]interface{}), "conditions")
+				if (upgradeStatus == "Pending" && len(conditions) < 1) || len(conditions) < 1 {
+					break
+				}
 				if errorHandler("status.history.[].version.conditions", found, err) != nil {
 					continue
 				}
@@ -305,7 +308,7 @@ func (o *Provider) OCMUpgrade(ctx context.Context, client *kubernetes.Client, cl
 
 		switch upgradeStatus {
 		case "":
-			log.Println("Upgrade has not start yet..")
+			log.Println("Upgrade has not started yet..")
 			time.Sleep(upgradeDelay * time.Second)
 		case "Failed":
 			log.Printf("Upgrade failed, %s\n", conditionMessage)
