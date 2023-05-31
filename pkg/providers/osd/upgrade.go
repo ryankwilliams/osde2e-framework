@@ -8,11 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/openshift/osde2e-framework/pkg/clients/kubernetes"
-
 	"github.com/Masterminds/semver"
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
-
+	"github.com/openshift/osde2e-framework/pkg/clients/openshift"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -159,7 +157,7 @@ func (o *Provider) initiateUpgrade(ctx context.Context, clusterID, version strin
 }
 
 // restartManagedUpgradeOperator scales down/up the muo operator to speed up the cluster upgrade start time
-func (o *Provider) restartManagedUpgradeOperator(ctx context.Context, client *kubernetes.Client) error {
+func (o *Provider) restartManagedUpgradeOperator(ctx context.Context, client *openshift.Client) error {
 	patchReplicas := func(replicasCount int) (*k8s.Patch, error) {
 		patchData, err := json.Marshal(map[string]interface{}{
 			"spec": map[string]interface{}{
@@ -222,7 +220,7 @@ func (o *Provider) managedUpgradeConfigExist(ctx context.Context, dynamicClient 
 }
 
 // OCMUpgrade handles the end to end process to upgrade an openshift dedicated cluster
-func (o *Provider) OCMUpgrade(ctx context.Context, client *kubernetes.Client, clusterID string, currentVersion, upgradeVersion semver.Version) error {
+func (o *Provider) OCMUpgrade(ctx context.Context, client *openshift.Client, clusterID string, currentVersion, upgradeVersion semver.Version) error {
 	var (
 		conditionMessage string
 		dynamicClient    *dynamic.DynamicClient
@@ -329,7 +327,7 @@ func (o *Provider) OCMUpgrade(ctx context.Context, client *kubernetes.Client, cl
 }
 
 // getKubernetesDynamicClient returns the kubernetes dynamic client
-func getKubernetesDynamicClient(client *kubernetes.Client) (*dynamic.DynamicClient, error) {
+func getKubernetesDynamicClient(client *openshift.Client) (*dynamic.DynamicClient, error) {
 	dynamicClient, err := dynamic.NewForConfig(client.GetConfig())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kubernetes dynamic client: %w", err)
