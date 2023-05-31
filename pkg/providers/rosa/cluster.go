@@ -10,7 +10,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/openshift/osde2e-framework/internal/cmd"
-	"github.com/openshift/osde2e-framework/pkg/clients/kubernetes"
+	"github.com/openshift/osde2e-framework/pkg/clients/openshift"
 
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	v1 "k8s.io/api/core/v1"
@@ -401,9 +401,9 @@ func (r *Provider) waitForClusterHealthChecksToSucceed(ctx context.Context, kube
 	}()
 
 	os.Setenv("KUBECONFIG", kubeConfigFile)
-	client, err := kubernetes.New()
+	client, err := openshift.New()
 	if err != nil {
-		return fmt.Errorf("failed to construct kubernetes client: %v", err)
+		return fmt.Errorf("failed to construct openshift client: %v", err)
 	}
 
 	switch hostedCP {
@@ -417,7 +417,7 @@ func (r *Provider) waitForClusterHealthChecksToSucceed(ctx context.Context, kube
 }
 
 // classicClusterInstallHealthChecks waits for the classic cluster to be healthy and operational
-func (r *Provider) classicClusterInstallHealthChecks(ctx context.Context, client *kubernetes.Client) error {
+func (r *Provider) classicClusterInstallHealthChecks(ctx context.Context, client *openshift.Client) error {
 	// TODO Implement this and port existing check of waiting for osd ready job
 	log.Println("Start: ROSA Classic Cluster health checks..")
 	log.Println("End: ROSA Classic Cluster health checks..")
@@ -425,7 +425,7 @@ func (r *Provider) classicClusterInstallHealthChecks(ctx context.Context, client
 }
 
 // hcpClusterInstallHealthChecks waits for the hosted control plane cluster to be healthy and operational
-func (r *Provider) hcpClusterInstallHealthChecks(ctx context.Context, client *kubernetes.Client) error {
+func (r *Provider) hcpClusterInstallHealthChecks(ctx context.Context, client *openshift.Client) error {
 	log.Println("Start: ROSA Hosted Control Plane (HCP) Cluster health checks..")
 
 	// TODO We should look into seeing how to modify osd ready job to support hcp clusters
