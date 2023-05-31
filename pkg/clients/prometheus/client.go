@@ -12,7 +12,7 @@ import (
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/osde2e-framework/pkg/clients/kubernetes"
+	"github.com/openshift/osde2e-framework/pkg/clients/openshift"
 	"github.com/prometheus/client_golang/api"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
@@ -24,11 +24,7 @@ type Client struct {
 }
 
 // TODO: should we use thanos querier instead?
-func New(ctx context.Context, client *kubernetes.Client) (*Client, error) {
-	if err := routev1.AddToScheme(client.GetScheme()); err != nil {
-		return nil, fmt.Errorf("failed registering routev1 scheme: %w", err)
-	}
-
+func New(ctx context.Context, client *openshift.Client) (*Client, error) {
 	var route routev1.Route
 	if err := client.Get(ctx, "prometheus-k8s", "openshift-monitoring", &route); err != nil {
 		return nil, fmt.Errorf("unable to find prometheus route: %w", err)
