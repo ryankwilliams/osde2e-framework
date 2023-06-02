@@ -24,7 +24,7 @@ func (r *Provider) deleteOperatorRoles(ctx context.Context, clusterID string) er
 	commandArgs := []string{"delete", "operator-roles", "--cluster", clusterID, "--mode", "auto", "--yes"}
 
 	err := r.awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
-		_, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
+		_, _, err := cmd.Run(exec.CommandContext(ctx, r.rosaBinary, commandArgs...))
 		return err
 	})
 	if err != nil {

@@ -45,7 +45,7 @@ func (r *Provider) createOIDCConfig(ctx context.Context, prefix, installerRoleAr
 	commandArgs = append(commandArgs, "--prefix", prefix)
 
 	err = r.awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
-		stdout, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
+		stdout, _, err := cmd.Run(exec.CommandContext(ctx, r.rosaBinary, commandArgs...))
 		if err != nil {
 			return err
 		}
@@ -71,7 +71,7 @@ func (r *Provider) deleteOIDCConfig(ctx context.Context, oidcConfigID string) er
 	commandArgs := []string{"delete", "oidc-config", "--mode", "auto", "--oidc-config-id", oidcConfigID, "--yes"}
 
 	err := r.awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
-		_, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
+		_, _, err := cmd.Run(exec.CommandContext(ctx, r.rosaBinary, commandArgs...))
 		return err
 	})
 	if err != nil {
@@ -112,7 +112,7 @@ func (r *Provider) deleteOIDCConfigProvider(ctx context.Context, clusterID strin
 	commandArgs := []string{"delete", "oidc-provider", "--cluster", clusterID, "--mode", "auto", "--yes"}
 
 	err := r.awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
-		_, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
+		_, _, err := cmd.Run(exec.CommandContext(ctx, r.rosaBinary, commandArgs...))
 		return err
 	})
 	if err != nil {

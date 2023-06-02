@@ -58,7 +58,7 @@ func (r *Provider) createAccountRoles(ctx context.Context, prefix, version, chan
 		}
 
 		err := r.awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
-			_, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
+			_, _, err := cmd.Run(exec.CommandContext(ctx, r.rosaBinary, commandArgs...))
 			if err != nil {
 				return err
 			}
@@ -91,7 +91,7 @@ func (r *Provider) deleteAccountRoles(ctx context.Context, prefix string) error 
 	commandArgs := []string{"delete", "account-roles", "--prefix", prefix, "--mode", "auto", "--yes"}
 
 	err := r.awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
-		_, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
+		_, _, err := cmd.Run(exec.CommandContext(ctx, r.rosaBinary, commandArgs...))
 		return err
 	})
 	if err != nil {
@@ -114,7 +114,7 @@ func (r *Provider) getAccountRoles(ctx context.Context, prefix, version string) 
 	commandArgs := []string{"list", "account-roles", "--output", "json"}
 
 	err := r.awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
-		stdout, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
+		stdout, _, err := cmd.Run(exec.CommandContext(ctx, r.rosaBinary, commandArgs...))
 		if err != nil {
 			return err
 		}

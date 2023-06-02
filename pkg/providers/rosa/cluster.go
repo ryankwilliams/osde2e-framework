@@ -287,7 +287,7 @@ func (r *Provider) createCluster(ctx context.Context, options *CreateClusterOpti
 	}
 
 	err = r.awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
-		_, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
+		_, _, err := cmd.Run(exec.CommandContext(ctx, r.rosaBinary, commandArgs...))
 		return err
 	})
 	if err != nil {
@@ -327,7 +327,7 @@ func (r *Provider) deleteCluster(ctx context.Context, clusterID string) error {
 
 	commandArgs := []string{"delete", "cluster", "--cluster", clusterID, "--yes"}
 	err := r.awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
-		_, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
+		_, _, err := cmd.Run(exec.CommandContext(ctx, r.rosaBinary, commandArgs...))
 		return err
 	})
 
@@ -341,7 +341,7 @@ func (r *Provider) waitForClusterToBeReady(ctx context.Context, clusterID string
 
 		commandArgs := []string{"describe", "cluster", "--cluster", clusterID, "--output", "json"}
 		err := r.awsCredentials.CallFuncWithCredentials(ctx, func(ctx context.Context) error {
-			stdout, _, err := cmd.Run(exec.CommandContext(ctx, "rosa", commandArgs...))
+			stdout, _, err := cmd.Run(exec.CommandContext(ctx, r.rosaBinary, commandArgs...))
 			if err != nil {
 				return err
 			}
@@ -438,6 +438,10 @@ func (r *Provider) hcpClusterInstallHealthChecks(ctx context.Context, client *ku
 				return false, nil
 			}
 			return false, err
+		}
+
+		if len(nodes.Items) == 0 {
+			return false, fmt.Errorf("no nodes available")
 		}
 
 		for _, node := range nodes.Items {
